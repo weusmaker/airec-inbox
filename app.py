@@ -205,4 +205,18 @@ def worker():
             jobs.task_done()
 
 
+def keep_alive():
+    """Render 무료 서버는 15분간 외부 요청이 없으면 잠듦 → 10분마다 자기 공개 주소로 요청"""
+    url = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
+    if not url:
+        return
+    while True:
+        time.sleep(600)
+        try:
+            httpx.get(f"{url}/health", timeout=30)
+        except Exception:  # noqa: BLE001
+            log.warning("keep-alive ping 실패")
+
+
 threading.Thread(target=worker, daemon=True).start()
+threading.Thread(target=keep_alive, daemon=True).start()
